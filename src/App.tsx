@@ -41,6 +41,8 @@ const SideBar = styled.div`
 	color: white;
 	overflow-y: auto;
 	overflow-x: hidden;
+	display: flex;
+	flex-direction: column;
 	h3 {
 		text-align: center;
 	}
@@ -100,12 +102,16 @@ interface PageState {
 	showImport: boolean,
 	importContents: string,
 
+	showMarkers: boolean,
+	showPolygons: boolean,
+
 	exportContents: string,
 }
 
 function App() {
 	const mapRef = useRef<{
 		flyTo: (x: number, y: number) => void,
+		getZoom: () => number,
 	}>();
 
 	const [ state, setState ] = useState<PageState>({
@@ -116,6 +122,9 @@ function App() {
 		showImport: false,
 		importContents: "",
 		exportContents: "",
+
+		showMarkers: true,
+		showPolygons: true,
 	});
 
 	const mapClick = (e: LeafletMouseEvent) => {
@@ -144,7 +153,7 @@ function App() {
 				}
 			];
 
-			const updatedMarkers = markerJoinPolygon(newMarkers.length - 1, true, newMarkers);
+			const updatedMarkers = markerJoinPolygon(newMarkers.length - 1, true, 15, newMarkers);
 
 			return {
 				...s,
@@ -325,7 +334,7 @@ function App() {
 			markers[markerId].x = mapped.x;
 			markers[markerId].y = mapped.y;
 
-			const updatedMarkers = markerJoinPolygon(markerId, false, markers);
+			const updatedMarkers = markerJoinPolygon(markerId, false, 10, markers);
 
 			return { ...s, markers: updatedMarkers };
 		});
@@ -338,14 +347,7 @@ function App() {
 		};
 	}, []);
 
-	const unmapCoordsSensible = useCallback((x: number, y: number): { x: number, y: number } => {
-		return {
-			x: numberMap(x, 0, 6000, -3000, 3000),
-			y: numberMap(y, 0, 6000, -3000, 3000),
-		};
-	}, []);
-
-	const markerJoinPolygon = (markerId: number, updatePolygon: boolean, suppliedMarkers?: MapMarker[]): MapMarker[] => {
+	const markerJoinPolygon = (markerId: number, updatePolygon: boolean, maxDistance: number = 10, suppliedMarkers?: MapMarker[]): MapMarker[] => {
 		const allMarkers = (suppliedMarkers ? suppliedMarkers : [ ...state.markers ]);
 		const marker = allMarkers[markerId];
 
@@ -363,86 +365,91 @@ function App() {
 		const markerCoords = mapCoordsSensible(marker.x, marker.y);
 
 		// Create a list of all markers in the same polygon.
-		const polygonMarkers: MapMarker[] = [];
-		for (let m of allMarkers) {
+		const polygonGroups: MapMarker[][] = [];
+
+		for (let i=1; i<polygonColours.length; i++) {
 			if (!updatePolygon) {
-				if (m === marker) {
-					continue;
-				}
-				if (m.polygon !== marker.polygon) {
+				if (i !== marker.polygon) {
 					continue;
 				}
 			}
-			polygonMarkers.push(m);
+
+			const polygonMarkers: MapMarker[] = [];
+			for (let m of allMarkers) {
+				if (m.polygon === i) {
+					polygonMarkers.push(m);
+				}
+			}
+			polygonGroups.push(polygonMarkers);
 		}
 
-		let debugMarkers: MapMarker[] = [];
 
-		for (let i = 0; i < polygonMarkers.length; i++ ) {
-			const thisMarker: MapMarker = polygonMarkers[i];
-			let nextMarker: MapMarker;
+		for (let polygonGroup of polygonGroups) {
+			for (let i = 0; i < polygonGroup.length; i++ ) {
+				const thisMarker: MapMarker = polygonGroup[i];
+				let nextMarker: MapMarker;
 
-			if (thisMarker === marker) {
-				continue;
-			}
+				if (thisMarker === marker) {
+					continue;
+				}
 
-			// Select the first marker if we're looking at the last
-			if (i === (polygonMarkers.length-1)) {
-				nextMarker = polygonMarkers[0];
-			} else {
-				nextMarker = polygonMarkers[i + 1];
-			}
-
-			// If the next marker is the one we're handling, skip it.
-			if (nextMarker === marker) {
-				if (i+2 >= polygonMarkers.length) {
-					nextMarker = polygonMarkers[0];
+				// Select the first marker if we're looking at the last
+				if (i === (polygonGroup.length-1)) {
+					nextMarker = polygonGroup[0];
 				} else {
-					nextMarker = polygonMarkers[i + 2]
-				}
-			}
-
-			const thisId = allMarkers.indexOf(thisMarker);
-			const nextId = allMarkers.indexOf(nextMarker);
-
-
-			const thisCoords = mapCoordsSensible(thisMarker.x, thisMarker.y);
-			const nextCoords = mapCoordsSensible(nextMarker.x, nextMarker.y);
-			// markerCoords
-			const diffX = nextCoords.x - thisCoords.x;
-			const diffY = nextCoords.y - thisCoords.y;
-			const distanceBetween = Math.hypot(diffX, diffY);
-
-			const angleDeg = Math.atan2(nextCoords.y - thisCoords.y, nextCoords.x - thisCoords.x ); // Radians
-			let hit = false;
-
-			//console.log(`Raycasting between ${thisId} and ${nextId} with a max distance of ${distanceBetween}, angle is ${angleDeg}`);
-
-			for (let rad=0; rad<distanceBetween; rad += 10) {
-				const rayCastX = rad * Math.cos(angleDeg) + thisCoords.x;
-				const rayCastY = rad * Math.sin(angleDeg) + thisCoords.y;
-
-				const distanceTo = Math.hypot( rayCastX - markerCoords.x, rayCastY - markerCoords.y );
-				if (distanceTo <= 10) {
-					hit = true;
-					break;
-				}
-			}
-			if (hit) {
-				const thisMarkerId = allMarkers.indexOf(thisMarker);
-				const markersBefore = allMarkers.slice(0, thisMarkerId + 1).filter( (m) => (m !== marker));
-				const markersAfter = allMarkers.slice(thisMarkerId + 1).filter( (m) => (m !== marker));
-
-				if (updatePolygon) {
-					marker.polygon = thisMarker.polygon;
+					nextMarker = polygonGroup[i + 1];
 				}
 
-				return [
-					...markersBefore,
-					marker,
-					...markersAfter,
-				];
-				break;
+				// If the next marker is the one we're handling, skip it.
+				if (nextMarker === marker) {
+					if (i+2 >= polygonGroup.length) {
+						nextMarker = polygonGroup[0];
+					} else {
+						nextMarker = polygonGroup[i + 2]
+					}
+				}
+
+				const thisCoords = mapCoordsSensible(thisMarker.x, thisMarker.y);
+				const nextCoords = mapCoordsSensible(nextMarker.x, nextMarker.y);
+				// markerCoords
+				const diffX = nextCoords.x - thisCoords.x;
+				const diffY = nextCoords.y - thisCoords.y;
+				const distanceBetween = Math.hypot(diffX, diffY);
+
+				const angleDeg = Math.atan2(nextCoords.y - thisCoords.y, nextCoords.x - thisCoords.x ); // Radians
+				let hit = false;
+
+				//console.log(`Raycasting between ${thisId} and ${nextId} with a max distance of ${distanceBetween}, angle is ${angleDeg}`);
+
+				for (let rad=0; rad<distanceBetween; rad += 10) {
+					const rayCastX = rad * Math.cos(angleDeg) + thisCoords.x;
+					const rayCastY = rad * Math.sin(angleDeg) + thisCoords.y;
+
+					const distanceTo = Math.hypot( rayCastX - markerCoords.x, rayCastY - markerCoords.y );
+					let currentZoom = (mapRef.current ? mapRef.current.getZoom() : 0);
+					const zoomNormalised = 7 - currentZoom;
+
+					if (distanceTo <= (maxDistance/5) * (zoomNormalised + 1)) {
+						hit = true;
+						break;
+					}
+				}
+				if (hit) {
+					const thisMarkerId = allMarkers.indexOf(thisMarker);
+					const markersBefore = allMarkers.slice(0, thisMarkerId + 1).filter( (m) => (m !== marker));
+					const markersAfter = allMarkers.slice(thisMarkerId + 1).filter( (m) => (m !== marker));
+
+					if (updatePolygon) {
+						marker.polygon = thisMarker.polygon;
+						marker.icon = thisMarker.icon;
+					}
+
+					return [
+						...markersBefore,
+						marker,
+						...markersAfter,
+					];
+				}
 			}
 		}
 
@@ -462,6 +469,9 @@ function App() {
 					flex: 1,
 				}}
 				ref={mapRef}
+
+				showMarkers={state.showMarkers}
+				showPolygons={state.showPolygons}
 			/>
 			<SideBar>
 				<ControlButtons>
@@ -475,60 +485,75 @@ function App() {
 						}));
 					}}>JSON Import</button>
 				</ControlButtons>
+				<ControlButtons>
+					<input type="checkbox" id="showMarkers" checked={state.showMarkers} onChange={e => {
+						setState(s => ({ ...s, showMarkers: e.target.checked }))
+					}}/> <label htmlFor="showMarkers">Show Markers</label>
+					<br/>
+					<input type="checkbox" id="showPolygons" checked={state.showPolygons} onChange={e => {
+						setState(s => ({ ...s, showPolygons: e.target.checked }))
+					}} /> <label htmlFor="showPolygons">Show Polygons</label>
+				</ControlButtons>
 				<h3>Map Markers</h3>
-				<table style={{ width: "100%" }}>
-					<thead>
-						<tr>
-							<th>ID</th>
-							<th>Icon</th>
-							<th>X</th>
-							<th>Y</th>
-							<th>Polygon</th>
-							<th></th>
-						</tr>
-					</thead>
-					{state.markers.map( (m, ind) => {
-						return (
-							<tr style={{
-								backgroundColor: (ind === state.focusedMarker ? "red" : "initial")
-							}} key={ind}>
-								<td onClick={()=>{
-									flyToMarker(ind);
-									setState(s => ({ ...s, focusedMarker: ind }));
-								}}>{ind}</td>
-								<td>
-									<select onChange={(e) => {
-										setMarkerIcon(ind, parseInt(e.target.value));
-									}}>
-										{mapIcons.map( (c, ind) => {
-											return <option selected={m.icon === ind} value={ind} key={ind} >{c}</option>
-										})}
-									</select>
-								</td>
-								<td onClick={()=>{
-									flyToMarker(ind);
-									setState(s => ({ ...s, focusedMarker: ind }));
-								}}>{m.x.toFixed(2)}</td>
-								<td onClick={()=>{
-									flyToMarker(ind);
-									setState(s => ({ ...s, focusedMarker: ind }));
-								}}>{m.y.toFixed(2)}</td>
-								<td>
-									<select onChange={(e) => {
-										setMarkerColour(ind, parseInt(e.target.value));
-									}}>
-										{polygonColours.map( (c, ind) => {
-											return <option selected={m.polygon === ind} value={ind} key={ind} >{c}</option>
-										})}
-									</select>
-								</td>
-								<td>
-									<button onClick={() => deleteMarker(ind)}>X</button>
-								</td>
+				<div style={{
+					overflowY: "auto",
+					overflowX: "hidden",
+					flex: 1,
+				}}>
+					<table style={{ width: "100%" }}>
+						<thead>
+							<tr>
+								<th>ID</th>
+								<th>Icon</th>
+								<th>X</th>
+								<th>Y</th>
+								<th>Polygon</th>
+								<th></th>
 							</tr>
-						);
-					})}
-				</table>
+						</thead>
+						{state.markers.map( (m, ind) => {
+							return (
+								<tr style={{
+									backgroundColor: (ind === state.focusedMarker ? "red" : "initial")
+								}} key={ind}>
+									<td onClick={()=>{
+										flyToMarker(ind);
+										setState(s => ({ ...s, focusedMarker: ind }));
+									}}>{ind}</td>
+									<td>
+										<select onChange={(e) => {
+											setMarkerIcon(ind, parseInt(e.target.value));
+										}}>
+											{mapIcons.map( (c, ind) => {
+												return <option selected={m.icon === ind} value={ind} key={ind} >{c}</option>
+											})}
+										</select>
+									</td>
+									<td onClick={()=>{
+										flyToMarker(ind);
+										setState(s => ({ ...s, focusedMarker: ind }));
+									}}>{m.x.toFixed(2)}</td>
+									<td onClick={()=>{
+										flyToMarker(ind);
+										setState(s => ({ ...s, focusedMarker: ind }));
+									}}>{m.y.toFixed(2)}</td>
+									<td>
+										<select onChange={(e) => {
+											setMarkerColour(ind, parseInt(e.target.value));
+										}}>
+											{polygonColours.map( (c, ind) => {
+												return <option selected={m.polygon === ind} value={ind} key={ind} >{c}</option>
+											})}
+										</select>
+									</td>
+									<td>
+										<button onClick={() => deleteMarker(ind)}>X</button>
+									</td>
+								</tr>
+							);
+						})}
+					</table>
+				</div>
 			</SideBar>
 			{state.exportContents && <ExportDialog>
 				<h1>Data Export</h1>

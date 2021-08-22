@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState, useImperativeHandle, forwardRef } from 'react';
 
-import { MapContainer, TileLayer, Marker, useMapEvents, Polygon } from 'react-leaflet';
-import { CRS, DragEndEvent, Icon, LatLng, LeafletMouseEvent, Map, marker } from 'leaflet';
+import { MapContainer, TileLayer, useMapEvents, Polygon } from 'react-leaflet';
+import { CRS, DragEndEvent, Icon, LatLng, LeafletMouseEvent, Map } from 'leaflet';
 import MapMarker from '../interfaces/MapMarker';
 import polygonColours from '../Polygons';
 import DraggableMarker from '../components/DraggableMarker';
@@ -19,6 +19,9 @@ interface MappedPropertyProps {
 	onClick: (e: LeafletMouseEvent) => void
 	onMarkerClick: (e: LeafletMouseEvent, markerId: number) => void,
 	onMarkerDragged: (e: DragEndEvent, markerId: number, latlng: LatLng) => void,
+
+	showMarkers: boolean,
+	showPolygons: boolean,
 }
 
 interface MapEventsProps {
@@ -57,6 +60,12 @@ function MappedProperty(props: MappedPropertyProps, ref: any) {
 					lng: coords[1],
 				});
 			}
+		},
+		getZoom: () => {
+			if (state.map) {
+				return state.map.getZoom();
+			}
+			return 0;
 		}
 	}));
 
@@ -114,7 +123,7 @@ function MappedProperty(props: MappedPropertyProps, ref: any) {
 				url="https://storage.burnett-taylor.me/gtasa-map/tiles/{z}/{x}/{y}.jpg"
 			/>
 
-			{props.markers.map( (loc, ind) => {
+			{props.showMarkers && props.markers.map( (loc, ind) => {
 				return (
 					<DraggableMarker
 						draggable={true}
@@ -128,7 +137,7 @@ function MappedProperty(props: MappedPropertyProps, ref: any) {
 				);
 			})}
 
-			{polygonColours.map( (polygonColour, polygonId) => {
+			{props.showPolygons && polygonColours.map( (polygonColour, polygonId) => {
 				if (polygonId === 0) {
 					return <></>;
 				}

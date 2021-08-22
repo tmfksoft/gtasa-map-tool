@@ -1,6 +1,5 @@
-import { DragEndEvent, LatLng, LeafletEvent, LeafletMouseEvent, Marker as LeafletMarker } from 'leaflet';
+import { DragEndEvent, LatLng, LeafletMouseEvent, Marker as LeafletMarker } from 'leaflet';
 import React, { useRef } from 'react';
-import { useState } from 'react';
 import { Marker, MarkerProps } from 'react-leaflet';
 
 interface DraggableMarkerProps extends MarkerProps {
