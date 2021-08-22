@@ -1,4 +1,4 @@
-import { LeafletMouseEvent } from 'leaflet';
+import { LatLng, LeafletMouseEvent } from 'leaflet';
 import React, { useCallback } from 'react';
 import { useState } from 'react';
 import styled from 'styled-components';
@@ -135,16 +135,20 @@ function App() {
 				lastIcon = lastMarker.icon;
 			}
 
+			const newMarkers = [
+				...s.markers,
+				{
+					...mapped,
+					icon: lastIcon,
+					polygon: lastColour,
+				}
+			];
+
+			const updatedMarkers = markerJoinPolygon(newMarkers.length - 1, true, newMarkers);
+
 			return {
 				...s,
-				markers: [
-					...s.markers,
-					{
-						...mapped,
-						icon: lastIcon,
-						polygon: lastColour,
-					}
-				],
+				markers: updatedMarkers,
 			};
 
 		});
@@ -310,12 +314,150 @@ function App() {
 		}
 	}
 
+	const markerDragged = (e: any, markerId: number, latlng: LatLng) => {
+		console.log(`Marker ${markerId} was dragged to ${latlng.lat} ${latlng.lng}`);
+		setState(s => {
+			const markers = [...s.markers];
+			if (markerId >= markers.length) {
+				return s;
+			}
+			const mapped = mapCoords(latlng.lat, latlng.lng);
+			markers[markerId].x = mapped.x;
+			markers[markerId].y = mapped.y;
+
+			const updatedMarkers = markerJoinPolygon(markerId, false, markers);
+
+			return { ...s, markers: updatedMarkers };
+		});
+	}
+
+	const mapCoordsSensible = useCallback((x: number, y: number): { x: number, y: number } => {
+		return {
+			x: numberMap(x, -3000, 3000, 0, 6000),
+			y: numberMap(y, -3000, 3000, 0, 6000),
+		};
+	}, []);
+
+	const unmapCoordsSensible = useCallback((x: number, y: number): { x: number, y: number } => {
+		return {
+			x: numberMap(x, 0, 6000, -3000, 3000),
+			y: numberMap(y, 0, 6000, -3000, 3000),
+		};
+	}, []);
+
+	const markerJoinPolygon = (markerId: number, updatePolygon: boolean, suppliedMarkers?: MapMarker[]): MapMarker[] => {
+		const allMarkers = (suppliedMarkers ? suppliedMarkers : [ ...state.markers ]);
+		const marker = allMarkers[markerId];
+
+		// Skip the marker if it doesn't have a polygon.
+		
+		if (!marker || typeof marker === "undefined") {
+			return allMarkers;
+		}
+		if (!updatePolygon) {
+			if (!marker.polygon || marker.polygon <= 0) {
+				return allMarkers;
+			}
+		}
+
+		const markerCoords = mapCoordsSensible(marker.x, marker.y);
+
+		// Create a list of all markers in the same polygon.
+		const polygonMarkers: MapMarker[] = [];
+		for (let m of allMarkers) {
+			if (!updatePolygon) {
+				if (m === marker) {
+					continue;
+				}
+				if (m.polygon !== marker.polygon) {
+					continue;
+				}
+			}
+			polygonMarkers.push(m);
+		}
+
+		let debugMarkers: MapMarker[] = [];
+
+		for (let i = 0; i < polygonMarkers.length; i++ ) {
+			const thisMarker: MapMarker = polygonMarkers[i];
+			let nextMarker: MapMarker;
+
+			if (thisMarker === marker) {
+				continue;
+			}
+
+			// Select the first marker if we're looking at the last
+			if (i === (polygonMarkers.length-1)) {
+				nextMarker = polygonMarkers[0];
+			} else {
+				nextMarker = polygonMarkers[i + 1];
+			}
+
+			// If the next marker is the one we're handling, skip it.
+			if (nextMarker === marker) {
+				if (i+2 >= polygonMarkers.length) {
+					nextMarker = polygonMarkers[0];
+				} else {
+					nextMarker = polygonMarkers[i + 2]
+				}
+			}
+
+			const thisId = allMarkers.indexOf(thisMarker);
+			const nextId = allMarkers.indexOf(nextMarker);
+
+
+			const thisCoords = mapCoordsSensible(thisMarker.x, thisMarker.y);
+			const nextCoords = mapCoordsSensible(nextMarker.x, nextMarker.y);
+			// markerCoords
+			const diffX = nextCoords.x - thisCoords.x;
+			const diffY = nextCoords.y - thisCoords.y;
+			const distanceBetween = Math.hypot(diffX, diffY);
+
+			const angleDeg = Math.atan2(nextCoords.y - thisCoords.y, nextCoords.x - thisCoords.x ); // Radians
+			let hit = false;
+
+			//console.log(`Raycasting between ${thisId} and ${nextId} with a max distance of ${distanceBetween}, angle is ${angleDeg}`);
+
+			for (let rad=0; rad<distanceBetween; rad += 10) {
+				const rayCastX = rad * Math.cos(angleDeg) + thisCoords.x;
+				const rayCastY = rad * Math.sin(angleDeg) + thisCoords.y;
+
+				const distanceTo = Math.hypot( rayCastX - markerCoords.x, rayCastY - markerCoords.y );
+				if (distanceTo <= 10) {
+					hit = true;
+					break;
+				}
+			}
+			if (hit) {
+				const thisMarkerId = allMarkers.indexOf(thisMarker);
+				const markersBefore = allMarkers.slice(0, thisMarkerId + 1).filter( (m) => (m !== marker));
+				const markersAfter = allMarkers.slice(thisMarkerId + 1).filter( (m) => (m !== marker));
+
+				if (updatePolygon) {
+					marker.polygon = thisMarker.polygon;
+				}
+
+				return [
+					...markersBefore,
+					marker,
+					...markersAfter,
+				];
+				break;
+			}
+		}
+
+		return allMarkers;
+	}
+
 	return (
 		<PageContainer>
 			<MappedProperty
-				markers={state.markers}
+				markers={[
+					...state.markers,
+				]}
 				onClick={mapClick}
 				onMarkerClick={markerClick}
+				onMarkerDragged={markerDragged}
 				style={{
 					flex: 1,
 				}}

@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState, useImperativeHandle, forwardRef } from 'react';
 
 import { MapContainer, TileLayer, Marker, useMapEvents, Polygon } from 'react-leaflet';
-import { CRS, Icon, LeafletMouseEvent, Map } from 'leaflet';
+import { CRS, DragEndEvent, Icon, LatLng, LeafletMouseEvent, Map, marker } from 'leaflet';
 import MapMarker from '../interfaces/MapMarker';
 import polygonColours from '../Polygons';
+import DraggableMarker from '../components/DraggableMarker';
 
 interface MappedPropertyProps {
 	style?: React.CSSProperties,
@@ -17,6 +18,7 @@ interface MappedPropertyProps {
 	markers: MapMarker[],
 	onClick: (e: LeafletMouseEvent) => void
 	onMarkerClick: (e: LeafletMouseEvent, markerId: number) => void,
+	onMarkerDragged: (e: DragEndEvent, markerId: number, latlng: LatLng) => void,
 }
 
 interface MapEventsProps {
@@ -114,11 +116,15 @@ function MappedProperty(props: MappedPropertyProps, ref: any) {
 
 			{props.markers.map( (loc, ind) => {
 				return (
-					<Marker eventHandlers={{
-						click: (e) => {
-							props.onMarkerClick(e, ind);
-						}
-					}} riseOnHover icon={iconRepo[loc.icon]} position={mapCoords(loc.x, loc.y)} key={ind} />
+					<DraggableMarker
+						draggable={true}
+						onClick={(e)=> props.onMarkerClick(e, ind)}
+						onDragEnd={(e, latlng) => props.onMarkerDragged(e, ind, latlng)}
+						riseOnHover
+						icon={iconRepo[loc.icon]}
+						position={mapCoords(loc.x, loc.y)} 
+						key={ind}
+					/>
 				);
 			})}
 
