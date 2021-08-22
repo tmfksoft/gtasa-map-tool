@@ -19,7 +19,36 @@ const PageContainer = styled.div`
 	flex-direction: row;
 	background-color: black;
 
+	button, select {
+		border: solid 1px white;
+		border-radius: 2px;
+		background-color: white;
+		font-family: inherit;
+
+		transition: color linear .2s, background-color linear .2s;
+
+		&:hover {
+			background-color: #111;
+			color: white;
+			cursor: pointer;
+		}
+	}
+`;
+const SideBar = styled.div`
+	min-width: 400px;
+	background-color: #111;
+	padding: 10px;
+	color: white;
+	overflow-y: auto;
+	overflow-x: hidden;
+	h3 {
+		text-align: center;
+	}
+
+
 	table {
+		overflow-y: auto;
+		overflow-x: hidden;
 		border-spacing: 0;
 		td {
 			padding: 2px;
@@ -30,16 +59,7 @@ const PageContainer = styled.div`
 			text-align: center;
 		}
 	}
-`;
-const SideBar = styled.div`
-	min-width: 400px;
-	background-color: #111;
-	padding: 10px;
-	color: white;
-	overflow-y: auto;
-	h3 {
-		text-align: center;
-	}
+
 `;
 
 const ExportDialog = styled.div`
@@ -62,6 +82,13 @@ const ExportDialog = styled.div`
 	}
 	textarea {
 		flex: 1;
+	}
+`;
+const ControlButtons = styled.div`
+	text-align: center;
+	button {
+		margin-left: 1px;
+		margin-right: 1px;
 	}
 `;
 
@@ -103,13 +130,18 @@ function App() {
 				lastColour = lastMarker.polygon;
 			}
 
+			let lastIcon = 41;
+			if (lastMarker && lastMarker.icon) {
+				lastIcon = lastMarker.icon;
+			}
+
 			return {
 				...s,
 				markers: [
 					...s.markers,
 					{
 						...mapped,
-						icon: 41,
+						icon: lastIcon,
 						polygon: lastColour,
 					}
 				],
@@ -290,15 +322,17 @@ function App() {
 				ref={mapRef}
 			/>
 			<SideBar>
-				<button onClick={exportJson}>JSON Export</button>
-				<button onClick={exportList}>List Export</button>
-				<button onClick={()=>{
-					setState(s => ({
-						...s,
-						showImport: true,
-						importContents: "",
-					}));
-				}}>JSON Import</button>
+				<ControlButtons>
+					<button onClick={exportJson}>JSON Export</button>
+					<button onClick={exportList}>List Export</button>
+					<button onClick={()=>{
+						setState(s => ({
+							...s,
+							showImport: true,
+							importContents: "",
+						}));
+					}}>JSON Import</button>
+				</ControlButtons>
 				<h3>Map Markers</h3>
 				<table style={{ width: "100%" }}>
 					<thead>
