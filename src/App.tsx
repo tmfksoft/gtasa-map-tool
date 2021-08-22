@@ -1,5 +1,5 @@
 import { LatLng, LeafletMouseEvent } from 'leaflet';
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { useState } from 'react';
 import styled from 'styled-components';
 import './App.css';
@@ -8,6 +8,7 @@ import MapMarker from './interfaces/MapMarker';
 import polygonColours from './Polygons';
 import mapIcons from './MapIcons';
 import { useRef } from 'react';
+import defaultMarkers from './DefaultMarkers';
 
 const PageContainer = styled.div`
 	display: flex;
@@ -110,8 +111,9 @@ interface PageState {
 
 function App() {
 	const mapRef = useRef<{
-		flyTo: (x: number, y: number) => void,
+		flyTo: (x: number, y: number, zoom?: number) => void,
 		getZoom: () => number,
+		setZoom: (zoom: number) => void,
 	}>();
 
 	const [ state, setState ] = useState<PageState>({
@@ -126,6 +128,12 @@ function App() {
 		showMarkers: true,
 		showPolygons: true,
 	});
+
+	useEffect(()=>{
+		if (mapRef.current) {
+			mapRef.current.flyTo(-904.35,675.78);
+		}
+	}, []);
 
 	const mapClick = (e: LeafletMouseEvent) => {
 		const mapped = mapCoords(e.latlng.lat, e.latlng.lng);
@@ -470,10 +478,38 @@ function App() {
 				}}
 				ref={mapRef}
 
+				mapCenter={{
+					x: -904.35,
+					y: 675.78,
+				}}
+
+				zoomLevel={4}
+
 				showMarkers={state.showMarkers}
 				showPolygons={state.showPolygons}
 			/>
 			<SideBar>
+				<h3>GTA:SA Map Marker Tool</h3>
+				<div style={{
+					textAlign: "center",
+					marginBottom: "10px"
+				}}
+				onClick={()=>{
+					setState(s => ({
+						...s,
+						markers: [...s.markers, ...defaultMarkers],
+					}));
+					if (mapRef.current) {
+						mapRef.current.flyTo(
+							-904.35,
+							675.78,
+							4
+						);
+					}
+				}}
+				>
+					By Thomas Burnett-Taylor
+				</div>
 				<ControlButtons>
 					<button onClick={exportJson}>JSON Export</button>
 					<button onClick={exportList}>List Export</button>
@@ -484,6 +520,14 @@ function App() {
 							importContents: "",
 						}));
 					}}>JSON Import</button>
+					<button onClick={() => {
+						if (window.confirm("Are you sure you want to clear all markers?")) {
+							setState(s => ({
+								...s,
+								markers: [],
+							}));
+						}
+					}}>Clear Markers</button>
 				</ControlButtons>
 				<ControlButtons>
 					<input type="checkbox" id="showMarkers" checked={state.showMarkers} onChange={e => {

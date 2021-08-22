@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState, useImperativeHandle, forwardRef } from 'react';
+import React, { useCallback, useState, useImperativeHandle, forwardRef } from 'react';
 
 import { MapContainer, TileLayer, useMapEvents, Polygon } from 'react-leaflet';
 import { CRS, DragEndEvent, Icon, LatLng, LeafletMouseEvent, Map } from 'leaflet';
@@ -52,13 +52,14 @@ function MappedProperty(props: MappedPropertyProps, ref: any) {
 	});
 
 	useImperativeHandle(ref, () => ({
-		flyTo: (x: number, y: number) => {
+		flyTo: (x: number, y: number, zoom?: number) => {
 			if (state.map) {
 				const coords = mapCoords(x, y);
+				let currentZoom = state.map.getZoom();
 				state.map.flyTo({
 					lat: coords[0],
 					lng: coords[1],
-				});
+				}, (zoom || currentZoom) );
 			}
 		},
 		getZoom: () => {
@@ -66,6 +67,11 @@ function MappedProperty(props: MappedPropertyProps, ref: any) {
 				return state.map.getZoom();
 			}
 			return 0;
+		},
+		setZoom: (zoom: number) => {
+			if (state.map) {
+				state.map.setZoom(zoom);
+			}
 		}
 	}));
 
@@ -89,9 +95,16 @@ function MappedProperty(props: MappedPropertyProps, ref: any) {
 		];
 	}, []);
 
-	useEffect(()=>{
+	const centerMap = () => {
 		if (props.mapCenter) {
-			const mappedCoords = mapCoords(props.mapCenter.x, props.mapCenter.y);
+			const mappedCoords = [ props.mapCenter.x, props.mapCenter.y];
+			if (state.map) {
+				const coords = mapCoords(mappedCoords[0], mappedCoords[1]);
+				state.map.flyTo({
+					lat: coords[0],
+					lng: coords[1],
+				});
+			}
 			setState(s => ({
 				...s,
 				mapCenter: {
@@ -100,13 +113,13 @@ function MappedProperty(props: MappedPropertyProps, ref: any) {
 				}
 			}));
 		}
-	}, [ setState, mapCoords, props.mapCenter ]);
+	}
 
 	return(
 		<MapContainer
 			style={{ backgroundColor:"#007A9D", ...props.style }}
 			center={mapCoords(state.mapCenter.x, state.mapCenter.y)}
-			zoom={(props.zoomLevel || 7)}
+			zoom={(props.zoomLevel || 5)}
 			worldCopyJump={false}
 			maxZoom={7}
 			minZoom={0}
@@ -115,7 +128,10 @@ function MappedProperty(props: MappedPropertyProps, ref: any) {
 			/* maxBounds={[ [0, 0], [-212, 212] ]} */
 			tap={false}
 
-			whenCreated={map => setState(s => ( { ...s, map } ))}
+			whenCreated={map => {
+				setState(s => ( { ...s, map } ));
+				centerMap();
+			}}
 		>
 			<MapEvents clickHandler={props.onClick} />
 			<TileLayer
@@ -151,7 +167,7 @@ function MappedProperty(props: MappedPropertyProps, ref: any) {
 					}
 				}
 
-				return <Polygon positions={markers} color={polygonColour}/>
+				return <Polygon positions={markers} color={polygonColour.split(" ")[0]}/>
 			})}
 
 		</MapContainer>
