@@ -22,6 +22,7 @@ interface MappedPropertyProps {
 
 	showMarkers: boolean,
 	showPolygons: boolean,
+	showPolygonMarkers: boolean,
 }
 
 interface MapEventsProps {
@@ -130,7 +131,6 @@ function MappedProperty(props: MappedPropertyProps, ref: any) {
 
 			whenCreated={map => {
 				setState(s => ( { ...s, map } ));
-				centerMap();
 			}}
 		>
 			<MapEvents clickHandler={props.onClick} />
@@ -140,6 +140,11 @@ function MappedProperty(props: MappedPropertyProps, ref: any) {
 			/>
 
 			{props.showMarkers && props.markers.map( (loc, ind) => {
+				if (!props.showPolygonMarkers) {
+					if (loc.polygon && loc.polygon > 0) {
+						return <></>;
+					}
+				}
 				return (
 					<DraggableMarker
 						draggable={true}

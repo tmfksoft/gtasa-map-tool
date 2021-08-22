@@ -105,6 +105,7 @@ interface PageState {
 
 	showMarkers: boolean,
 	showPolygons: boolean,
+	showPolygonMarkers: boolean,
 
 	exportContents: string,
 }
@@ -127,6 +128,7 @@ function App() {
 
 		showMarkers: true,
 		showPolygons: true,
+		showPolygonMarkers: true,
 	});
 
 	useEffect(()=>{
@@ -487,6 +489,7 @@ function App() {
 
 				showMarkers={state.showMarkers}
 				showPolygons={state.showPolygons}
+				showPolygonMarkers={state.showPolygonMarkers}
 			/>
 			<SideBar>
 				<h3>GTA:SA Map Marker Tool</h3>
@@ -537,6 +540,9 @@ function App() {
 					<input type="checkbox" id="showPolygons" checked={state.showPolygons} onChange={e => {
 						setState(s => ({ ...s, showPolygons: e.target.checked }))
 					}} /> <label htmlFor="showPolygons">Show Polygons</label>
+					<input type="checkbox" id="showPolygonMarkers" checked={state.showPolygonMarkers} onChange={e => {
+						setState(s => ({ ...s, showPolygonMarkers: e.target.checked }))
+					}} /> <label htmlFor="showPolygonMarkers">Show Polygon Markers</label>
 				</ControlButtons>
 				<h3>Map Markers</h3>
 				<div style={{
