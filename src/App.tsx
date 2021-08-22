@@ -24,6 +24,7 @@ const PageContainer = styled.div`
 		td {
 			padding: 2px;
 			text-align: center;
+			cursor: pointer;
 		}
 		th {
 			text-align: center;
@@ -315,7 +316,10 @@ function App() {
 							<tr style={{
 								backgroundColor: (ind === state.focusedMarker ? "red" : "initial")
 							}} key={ind}>
-								<th>{ind}</th>
+								<td onClick={()=>{
+									flyToMarker(ind);
+									setState(s => ({ ...s, focusedMarker: ind }));
+								}}>{ind}</td>
 								<td>
 									<select onChange={(e) => {
 										setMarkerIcon(ind, parseInt(e.target.value));
@@ -329,7 +333,10 @@ function App() {
 									flyToMarker(ind);
 									setState(s => ({ ...s, focusedMarker: ind }));
 								}}>{m.x.toFixed(2)}</td>
-								<td onClick={()=>{ flyToMarker(ind); }}>{m.y.toFixed(2)}</td>
+								<td onClick={()=>{
+									flyToMarker(ind);
+									setState(s => ({ ...s, focusedMarker: ind }));
+								}}>{m.y.toFixed(2)}</td>
 								<td>
 									<select onChange={(e) => {
 										setMarkerColour(ind, parseInt(e.target.value));
