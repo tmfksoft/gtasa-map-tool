@@ -23,7 +23,7 @@ interface MapEventsProps {
 	clickHandler: (e: LeafletMouseEvent) => void,
 }
 function MapEvents(props: MapEventsProps) {
-	const map = useMapEvents({
+	useMapEvents({
 		click: props.clickHandler,
 	});
 	return (<></>);
@@ -123,7 +123,9 @@ function MappedProperty(props: MappedPropertyProps, ref: any) {
 			})}
 
 			{polygonColours.map( (polygonColour, polygonId) => {
-				if (polygonId === 0) return;
+				if (polygonId === 0) {
+					return <></>;
+				}
 
 				let markers = [];
 				for (let m of  props.markers) {

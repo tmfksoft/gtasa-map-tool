@@ -1,4 +1,4 @@
-export default [
+const PolygonColours = [
 	"NONE",
 	"White",
 	"Black",
@@ -8,3 +8,4 @@ export default [
 	"Yellow",
 	"Purple",
 ];
+export default PolygonColours;

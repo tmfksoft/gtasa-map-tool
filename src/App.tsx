@@ -1,4 +1,3 @@
-import { stat } from 'fs';
 import { LeafletMouseEvent } from 'leaflet';
 import React, { useCallback } from 'react';
 import { useState } from 'react';
@@ -24,6 +23,10 @@ const PageContainer = styled.div`
 		border-spacing: 0;
 		td {
 			padding: 2px;
+			text-align: center;
+		}
+		th {
+			text-align: center;
 		}
 	}
 `;
@@ -33,12 +36,43 @@ const SideBar = styled.div`
 	padding: 10px;
 	color: white;
 	overflow-y: auto;
+	h3 {
+		text-align: center;
+	}
+`;
+
+const ExportDialog = styled.div`
+	width: 800px;
+	height: 600px;
+	background-color: #111;
+	border:solid 2px white;
+	border-radius: 10px;
+	position: fixed;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	z-index: 500;
+	color: white;
+	padding: 10px;
+	display: flex;
+	flex-direction: column;
+	h1 {
+		text-align: center;
+	}
+	textarea {
+		flex: 1;
+	}
 `;
 
 interface PageState {
 	markers: MapMarker[],
 	lastPolygonColour: 0,
 	focusedMarker: number,
+
+	showImport: boolean,
+	importContents: string,
+
+	exportContents: string,
 }
 
 function App() {
@@ -50,6 +84,10 @@ function App() {
 		lastPolygonColour: 0,
 		markers: [],
 		focusedMarker: -1,
+
+		showImport: false,
+		importContents: "",
+		exportContents: "",
 	});
 
 	const mapClick = (e: LeafletMouseEvent) => {
@@ -71,7 +109,6 @@ function App() {
 					{
 						...mapped,
 						icon: 41,
-						name: `${s.markers.length}`,
 						polygon: lastColour,
 					}
 				],
@@ -153,6 +190,93 @@ function App() {
 		mapRef.current.flyTo(marker.x, marker.y);
 	}
 
+	const exportJson = () => {
+		if (state.markers.length <= 0) {
+			alert("Nothing to export!");
+			return;
+		}
+		setState(s => ({
+			...s,
+			exportContents: JSON.stringify(state.markers, null, 4)
+		}));
+	}
+	const exportList = () => {
+		if (state.markers.length <= 0) {
+			alert("Nothing to export!");
+			return;
+		}
+		setState(s => ({
+			...s,
+			exportContents: [
+				Object.keys(s.markers[0]),
+				...s.markers.map( m => Object.values(m).join(',')),
+			].join('\n'),
+		}));
+	}
+	const importJson = (contents: string) => {
+		try {
+			let json = JSON.parse(contents);
+			if (!Array.isArray(json)) {
+				alert("You must supply a LIST of coords!");
+				return;
+			}
+
+			let newMarkers: MapMarker[] = [];
+			let failed = 0;
+
+			for (let m of json) {
+				if (typeof m.x === "undefined") {
+					console.log("MISSING X", m);
+					failed++;
+					continue;
+				}
+				if (typeof m.y === "undefined") {
+					console.log("MISSING Y", m);
+					failed++;
+					continue;
+				}
+
+				let newMarker: {
+					x: number,
+					y: number,
+					icon?: number,
+					polygon?: number,
+				} = {
+					x: parseFloat(m.x),
+					y: parseFloat(m.y),
+				};
+
+				if (typeof m.icon !== "undefined") {
+					newMarker.icon = parseInt(m.icon);
+				}
+				if (typeof m.polygon !== "undefined") {
+					newMarker.polygon = parseInt(m.polygon);
+				}
+
+				newMarkers.push({
+					x: newMarker.x,
+					y: newMarker.y,
+
+					icon: newMarker.icon || 41,
+					polygon: newMarker.polygon || 0,
+				});
+			}
+
+			setState(s => ({
+				...s,
+				markers: newMarkers,
+				showImport: false,
+				importContents: "",
+			}));
+
+			alert(`Imported ${(json.length - failed)}/${json.length} markers. Check console for any failed imports.`);
+			
+		} catch (e) {
+			console.log(e);
+			alert("Unable to parse the JSON!")
+		}
+	}
+
 	return (
 		<PageContainer>
 			<MappedProperty
@@ -165,6 +289,15 @@ function App() {
 				ref={mapRef}
 			/>
 			<SideBar>
+				<button onClick={exportJson}>JSON Export</button>
+				<button onClick={exportList}>List Export</button>
+				<button onClick={()=>{
+					setState(s => ({
+						...s,
+						showImport: true,
+						importContents: "",
+					}));
+				}}>JSON Import</button>
 				<h3>Map Markers</h3>
 				<table style={{ width: "100%" }}>
 					<thead>
@@ -214,6 +347,26 @@ function App() {
 					})}
 				</table>
 			</SideBar>
+			{state.exportContents && <ExportDialog>
+				<h1>Data Export</h1>
+				<textarea value={state.exportContents}/>
+				<div>
+					<button onClick={() => setState(s => ({ ...s, exportContents: ""}))}>Close</button>
+				</div>
+			</ExportDialog>}
+			{state.showImport && <ExportDialog>
+				<h1>Data Import (JSON)</h1>
+				<textarea value={state.importContents} onChange={e => {
+					setState(s => ({
+						...s,
+						importContents: e.target.value
+					}));
+				}}/>
+				<div>
+					<button onClick={() => importJson(state.importContents)}>Import</button>
+					<button onClick={() => setState(s => ({ ...s, showImport: false, importContents: "" }))}>Cancel</button>
+				</div>
+			</ExportDialog>}
 		</PageContainer>
 	);
 }

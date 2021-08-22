@@ -3,5 +3,4 @@ export default interface MapMarker {
 	y: number,
 	icon: number,
 	polygon?: number,
-	name?: string,
 }
