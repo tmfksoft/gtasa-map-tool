@@ -135,11 +135,21 @@ function App() {
 		showPolygonMarkers: true,
 	});
 
+	const keyUpListener = useCallback((ev: KeyboardEvent): any => {
+		if (ev.key === "Delete") {
+			deleteMarker(state.focusedMarker);
+		}
+	}, [ state.focusedMarker ]);
+
 	useEffect(()=>{
 		if (mapRef.current) {
 			mapRef.current.flyTo(-904.35,675.78);
 		}
-	}, []);
+		document.addEventListener("keyup", keyUpListener);
+		return () => {
+			document.removeEventListener("keyup", keyUpListener);
+		}
+	}, [ keyUpListener ]);
 
 	const mapClick = (e: LeafletMouseEvent) => {
 		const mapped = mapCoords(e.latlng.lat, e.latlng.lng);
@@ -500,7 +510,6 @@ function App() {
 
 	const importList = (contents: string) => {
 		const lines = contents.split("\n");
-		let failed = 0;
 		let newMarkers: MapMarker[] = [];
 
 		let lastPolygon = 0;
@@ -516,7 +525,6 @@ function App() {
 			const ex = l.split(",");
 			if (ex.length < 2) {
 				console.log(`Line "${l}" has less than 2 coordinates`);
-				failed++;
 				continue;
 			}
 			let polygon = 0;
@@ -530,12 +538,19 @@ function App() {
 			if (ex.length >= 4) {
 				if (state.importAsPolygon) {
 					console.log(`Importing as polygon with id ${lastPolygon}`);
-					polygon = lastPolygon;
+					if (lastPolygon <= 0) {
+						polygon = 1;
+					} else {
+						polygon = lastPolygon;
+					}
 				} else {
 					if (ex[3].trim() !== "") {
 						polygon = parseInt(ex[3]);
 					}
 				}
+			} else if (state.importAsPolygon) {
+				console.log(`Importing as polygon with id ${lastPolygon}`);
+				polygon = lastPolygon;
 			}
 			let marker: MapMarker = {
 				x: parseFloat(ex[0]),

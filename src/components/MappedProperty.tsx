@@ -96,26 +96,6 @@ function MappedProperty(props: MappedPropertyProps, ref: any) {
 		];
 	}, []);
 
-	const centerMap = () => {
-		if (props.mapCenter) {
-			const mappedCoords = [ props.mapCenter.x, props.mapCenter.y];
-			if (state.map) {
-				const coords = mapCoords(mappedCoords[0], mappedCoords[1]);
-				state.map.flyTo({
-					lat: coords[0],
-					lng: coords[1],
-				});
-			}
-			setState(s => ({
-				...s,
-				mapCenter: {
-					x: mappedCoords[0],
-					y: mappedCoords[1],
-				}
-			}));
-		}
-	}
-
 	return(
 		<MapContainer
 			style={{ backgroundColor:"#007A9D", ...props.style }}
