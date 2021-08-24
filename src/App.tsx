@@ -280,7 +280,14 @@ function App() {
 			...s,
 			exportContents: [
 				Object.keys(s.markers[0]),
-				...s.markers.map( m => Object.values(m).join(',')),
+				...s.markers.map( m => Object.values(m).map( v => {
+					if (!isNaN(v)) {
+						if ( ((v as number) * 10.0) % 10 !== 0 ){
+							return (v as number).toFixed(2);
+						}
+					}
+					return v;
+				}).join(',')),
 			].join('\n'),
 		}));
 	}
