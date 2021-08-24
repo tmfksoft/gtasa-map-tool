@@ -21,10 +21,11 @@ const PageContainer = styled.div`
 	background-color: black;
 
 	button, select {
-		border: solid 1px white;
-		border-radius: 2px;
-		background-color: white;
 		font-family: inherit;
+		padding: 10px 15px;
+		background-color: #2D2C2A;
+		color: white;
+		border: none;
 
 		transition: color linear .2s, background-color linear .2s;
 
@@ -32,6 +33,9 @@ const PageContainer = styled.div`
 			background-color: #111;
 			color: white;
 			cursor: pointer;
+		}
+		&:active {
+			outline: none;
 		}
 	}
 `;
@@ -726,7 +730,7 @@ function App() {
 										</select>
 									</td>
 									<td>
-										<button onClick={() => deleteMarker(ind)}>X</button>
+										<button onClick={() => deleteMarker(ind)}>&times;</button>
 									</td>
 								</tr>
 							);
