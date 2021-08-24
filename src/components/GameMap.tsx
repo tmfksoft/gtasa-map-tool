@@ -4,7 +4,7 @@ import { MapContainer, TileLayer, useMapEvents, Polygon } from 'react-leaflet';
 import { CRS, DragEndEvent, Icon, LatLng, LeafletMouseEvent, Map } from 'leaflet';
 import MapMarker from '../interfaces/MapMarker';
 import polygonColours from '../Polygons';
-import DraggableMarker from '../components/DraggableMarker';
+import DraggableMarker from './DraggableMarker';
 
 interface MappedPropertyProps {
 	style?: React.CSSProperties,
@@ -115,7 +115,7 @@ function MappedProperty(props: MappedPropertyProps, ref: any) {
 		>
 			<MapEvents clickHandler={props.onClick} />
 			<TileLayer
-				attribution='&copy; <a href="https://mikescnr.com">Mike&#39;s Cops and Robbers</a>'
+				attribution='&copy; Thomas Burnett-Taylor'
 				url="https://storage.burnett-taylor.me/gtasa-map/tiles/{z}/{x}/{y}.jpg"
 			/>
 

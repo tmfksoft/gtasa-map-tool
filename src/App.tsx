@@ -3,7 +3,7 @@ import React, { useCallback, useEffect } from 'react';
 import { useState } from 'react';
 import styled from 'styled-components';
 import './App.css';
-import MappedProperty from './components/MappedProperty';
+import MappedProperty from './components/GameMap';
 import MapMarker from './interfaces/MapMarker';
 import polygonColours from './Polygons';
 import mapIcons from './MapIcons';
