@@ -100,8 +100,10 @@ interface PageState {
 	lastPolygonColour: 0,
 	focusedMarker: number,
 
+	importType: 'json' | 'list',
 	showImport: boolean,
 	importContents: string,
+	importAsPolygon: boolean,
 
 	showMarkers: boolean,
 	showPolygons: boolean,
@@ -123,6 +125,8 @@ function App() {
 		focusedMarker: -1,
 
 		showImport: false,
+		importType: 'json',
+		importAsPolygon: false,
 		importContents: "",
 		exportContents: "",
 
@@ -168,6 +172,7 @@ function App() {
 			return {
 				...s,
 				markers: updatedMarkers,
+				focusedMarker: (updatedMarkers.length - 1)
 			};
 
 		});
@@ -269,6 +274,19 @@ function App() {
 			].join('\n'),
 		}));
 	}
+	const doImport = () => {
+		if (state.importType === 'json') {
+			importJson(state.importContents);
+		} else {
+			importList(state.importContents);
+		}
+		setState(s => ({
+			...s,
+			showImport: false,
+			importContents: "",
+			importAsPolygon: false,
+		}));
+	}
 	const importJson = (contents: string) => {
 		try {
 			let json = JSON.parse(contents);
@@ -318,11 +336,25 @@ function App() {
 				});
 			}
 
+			if (state.importAsPolygon) {
+				let lastPolygon = 1;
+				for (let m of state.markers) {
+					if (m.polygon && m.polygon > 0) {
+						lastPolygon = m.polygon;
+					}
+				}
+				for (let m of newMarkers) {
+					m.polygon = lastPolygon + 1;
+				}
+				newMarkers = [
+					...state.markers,
+					...newMarkers,
+				]
+			}
+
 			setState(s => ({
 				...s,
 				markers: newMarkers,
-				showImport: false,
-				importContents: "",
 			}));
 
 			alert(`Imported ${(json.length - failed)}/${json.length} markers. Check console for any failed imports.`);
@@ -466,6 +498,86 @@ function App() {
 		return allMarkers;
 	}
 
+	const importList = (contents: string) => {
+		const lines = contents.split("\n");
+		let failed = 0;
+		let newMarkers: MapMarker[] = [];
+
+		let lastPolygon = 0;
+		for (let m of state.markers) {
+			if (m.polygon && m.polygon > 0) {
+				lastPolygon = m.polygon;
+			}
+		}
+		// Increase it!
+		lastPolygon++;
+
+		for (let l of lines) {
+			const ex = l.split(",");
+			if (ex.length < 2) {
+				console.log(`Line "${l}" has less than 2 coordinates`);
+				failed++;
+				continue;
+			}
+			let polygon = 0;
+			let icon = 41;
+
+			if (ex.length >= 3) {
+				if (ex[2].trim() !== "") {
+					icon = parseInt(ex[2]);
+				}
+			}
+			if (ex.length >= 4) {
+				if (state.importAsPolygon) {
+					console.log(`Importing as polygon with id ${lastPolygon}`);
+					polygon = lastPolygon;
+				} else {
+					if (ex[3].trim() !== "") {
+						polygon = parseInt(ex[3]);
+					}
+				}
+			}
+			let marker: MapMarker = {
+				x: parseFloat(ex[0]),
+				y: parseFloat(ex[1]),
+				icon,
+				polygon,
+			};
+			newMarkers.push(marker);
+		}
+		if (state.importAsPolygon) {
+			setState(s => ({
+				...s,
+				markers: [
+					...s.markers,
+					...newMarkers,
+				],
+			}));
+		} else {
+			setState(s => ({
+				...s,
+				markers: newMarkers,
+			}));
+		}
+		alert(`Imported (${newMarkers.length}/${lines.length}) markers, check the console for any import errors.`);
+	}
+
+	const showImport = (type: 'json' | 'list') => {
+		setState(s => ({
+			...s,
+			showImport: true,
+			importType: type,
+			importContents: "",
+		}));
+	}
+
+	const togglePolygonImport = () => {
+		setState(s => ({
+			...s,
+			importAsPolygon: !s.importAsPolygon,
+		}))
+	}
+
 	return (
 		<PageContainer>
 			<MappedProperty
@@ -516,13 +628,8 @@ function App() {
 				<ControlButtons>
 					<button onClick={exportJson}>JSON Export</button>
 					<button onClick={exportList}>List Export</button>
-					<button onClick={()=>{
-						setState(s => ({
-							...s,
-							showImport: true,
-							importContents: "",
-						}));
-					}}>JSON Import</button>
+					<button onClick={()=> showImport('json')}>JSON Import</button>
+					<button onClick={() => showImport('list')}>List Import</button>
 					<button onClick={() => {
 						if (window.confirm("Are you sure you want to clear all markers?")) {
 							setState(s => ({
@@ -613,7 +720,7 @@ function App() {
 				</div>
 			</ExportDialog>}
 			{state.showImport && <ExportDialog>
-				<h1>Data Import (JSON)</h1>
+				<h1>Data Import ({(state.importType === 'json' ? "JSON" : "List")})</h1>
 				<textarea value={state.importContents} onChange={e => {
 					setState(s => ({
 						...s,
@@ -621,8 +728,9 @@ function App() {
 					}));
 				}}/>
 				<div>
-					<button onClick={() => importJson(state.importContents)}>Import</button>
+					<button onClick={doImport}>Import</button>
 					<button onClick={() => setState(s => ({ ...s, showImport: false, importContents: "" }))}>Cancel</button>
+					<input type="checkbox" id="importAsPolygon" checked={state.importAsPolygon} onChange={() => togglePolygonImport()}/> <label htmlFor="importAsPolygon">Import as additional polygon</label>
 				</div>
 			</ExportDialog>}
 		</PageContainer>
