@@ -93,10 +93,6 @@ const ExportDialog = styled.div`
 `;
 const ControlButtons = styled.div`
 	text-align: center;
-	button {
-		margin-left: 1px;
-		margin-right: 1px;
-	}
 `;
 
 interface PageState {
