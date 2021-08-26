@@ -10,11 +10,6 @@ interface MappedPropertyProps {
 	style?: React.CSSProperties,
 	zoomLevel?: number,
 
-	mapCenter?: {
-		x: number,
-		y: number,
-	}
-
 	markers: MapMarker[],
 	onClick: (e: LeafletMouseEvent) => void
 	onMarkerClick: (e: LeafletMouseEvent, markerId: number) => void,
@@ -36,19 +31,11 @@ function MapEvents(props: MapEventsProps) {
 }
 
 interface PageState {
-	mapCenter: {
-		x: number,
-		y: number,
-	},
 	map: Map | null,
 }
 
 function MappedProperty(props: MappedPropertyProps, ref: any) {
 	const [ state, setState ] = useState<PageState>({
-		mapCenter: {
-			x: 0,
-			y: 0,
-		},
 		map: null,
 	});
 
@@ -99,7 +86,6 @@ function MappedProperty(props: MappedPropertyProps, ref: any) {
 	return(
 		<MapContainer
 			style={{ backgroundColor:"#007A9D", ...props.style }}
-			center={mapCoords(state.mapCenter.x, state.mapCenter.y)}
 			zoom={(props.zoomLevel || 5)}
 			worldCopyJump={false}
 			maxZoom={7}
