@@ -18,6 +18,11 @@ interface MappedPropertyProps {
 	showMarkers: boolean,
 	showPolygons: boolean,
 	showPolygonMarkers: boolean,
+
+	mapCenter?: {
+		x: number,
+		y: number,
+	}
 }
 
 interface MapEventsProps {
@@ -41,6 +46,8 @@ function MappedProperty(props: MappedPropertyProps, ref: any) {
 
 	useImperativeHandle(ref, () => ({
 		flyTo: (x: number, y: number, zoom?: number) => {
+			console.log("FlyTo Called", x, y, zoom);
+			
 			if (state.map) {
 				const coords = mapCoords(x, y);
 				let currentZoom = state.map.getZoom();
@@ -91,6 +98,7 @@ function MappedProperty(props: MappedPropertyProps, ref: any) {
 			maxZoom={7}
 			minZoom={0}
 			crs={CRS.Simple}
+			center={( props.mapCenter ?  mapCoords(props.mapCenter.x, props.mapCenter.y) : undefined )}
 			bounds={[ [0, 0], [-212, 212] ]}
 			/* maxBounds={[ [0, 0], [-212, 212] ]} */
 			tap={false}

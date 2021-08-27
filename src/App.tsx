@@ -3,7 +3,7 @@ import React, { useCallback, useEffect } from 'react';
 import { useState } from 'react';
 import styled from 'styled-components';
 import './App.css';
-import MappedProperty from './components/GameMap';
+import GameMap from './components/GameMap';
 import MapMarker from './interfaces/MapMarker';
 import polygonColours from './Polygons';
 import mapIcons from './MapIcons';
@@ -142,9 +142,6 @@ function App() {
 	}, [ state.focusedMarker ]);
 
 	useEffect(()=>{
-		if (mapRef.current) {
-			mapRef.current.flyTo(-904.35,675.78);
-		}
 		document.addEventListener("keyup", keyUpListener);
 		return () => {
 			document.removeEventListener("keyup", keyUpListener);
@@ -602,7 +599,7 @@ function App() {
 
 	return (
 		<PageContainer>
-			<MappedProperty
+			<GameMap
 				markers={[
 					...state.markers,
 				]}
@@ -615,8 +612,8 @@ function App() {
 				ref={mapRef}
 
 				mapCenter={{
-					x: -904.35,
-					y: 675.78,
+					x: 0,
+					y: 0,
 				}}
 
 				zoomLevel={4}
@@ -632,6 +629,7 @@ function App() {
 					marginBottom: "10px"
 				}}
 				onClick={()=>{
+					console.log("Easter Egg Time!")
 					setState(s => ({
 						...s,
 						markers: [...s.markers, ...defaultMarkers],
