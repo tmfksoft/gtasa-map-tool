@@ -527,6 +527,10 @@ function App() {
 
 		for (let l of lines) {
 			const ex = l.split(",");
+			if (isNaN(parseFloat(ex[0]))) {
+				console.log(`The first coordinate of ${l} is not numeric!`);
+				continue;
+			}
 			if (ex.length < 2) {
 				console.log(`Line "${l}" has less than 2 coordinates`);
 				continue;
