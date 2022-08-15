@@ -110,7 +110,7 @@ function MappedProperty(props: MappedPropertyProps, ref: any) {
 			<MapEvents clickHandler={props.onClick} />
 			<TileLayer
 				attribution='&copy; Thomas Burnett-Taylor'
-				url="https://storage.burnett-taylor.me/gtasa-map/tiles/{z}/{x}/{y}.jpg"
+				url="https://io.tbt.wtf/gtasa-map/tiles/{z}/{x}/{y}.jpg"
 			/>
 
 			{props.showMarkers && props.markers.map( (loc, ind) => {
