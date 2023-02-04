@@ -71,10 +71,11 @@ function MappedProperty(props: MappedPropertyProps, ref: any) {
 	}));
 
 	/* This should probably just abuse CDN */
+	
 	const iconRepo: Icon[] = [];
 	for (let i=0; i<=63; i++) {
 		iconRepo.push(new Icon({
-			iconUrl: "https://properties.mikescnr.com/api/marker/" + i,
+			iconUrl: "assets/markers/" + i + ".png",
 			iconSize: [ 30, 30 ],
 		}));
 	}
