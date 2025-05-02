@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useImperativeHandle, forwardRef } from 'react';
+import React, { useCallback, useState, useImperativeHandle, forwardRef, useRef } from 'react';
 
 import { MapContainer, TileLayer, useMapEvents, Polygon } from 'react-leaflet';
 import { CRS, DragEndEvent, Icon, LatLng, LeafletMouseEvent, Map } from 'leaflet';
@@ -40,6 +40,9 @@ interface PageState {
 }
 
 function MappedProperty(props: MappedPropertyProps, ref: any) {
+
+	const mapRef = useRef<Map>(null);
+
 	const [ state, setState ] = useState<PageState>({
 		map: null,
 	});
@@ -48,24 +51,24 @@ function MappedProperty(props: MappedPropertyProps, ref: any) {
 		flyTo: (x: number, y: number, zoom?: number) => {
 			console.log("FlyTo Called", x, y, zoom);
 			
-			if (state.map) {
+			if (mapRef.current) {
 				const coords = mapCoords(x, y);
-				let currentZoom = state.map.getZoom();
-				state.map.flyTo({
+				let currentZoom = mapRef.current.getZoom();
+				mapRef.current.flyTo({
 					lat: coords[0],
 					lng: coords[1],
 				}, (zoom || currentZoom) );
 			}
 		},
 		getZoom: () => {
-			if (state.map) {
-				return state.map.getZoom();
+			if (mapRef.current) {
+				return mapRef.current.getZoom();
 			}
 			return 0;
 		},
 		setZoom: (zoom: number) => {
-			if (state.map) {
-				state.map.setZoom(zoom);
+			if (mapRef.current) {
+				mapRef.current.setZoom(zoom);
 			}
 		}
 	}));
@@ -104,14 +107,15 @@ function MappedProperty(props: MappedPropertyProps, ref: any) {
 			/* maxBounds={[ [0, 0], [-212, 212] ]} */
 			tap={false}
 
-			whenCreated={map => {
-				setState(s => ( { ...s, map } ));
-			}}
+			// whenCreated={map => {
+			// 	setState(s => ( { ...s, map } ));
+			// }}
+			ref={mapRef}
 		>
 			<MapEvents clickHandler={props.onClick} />
 			<TileLayer
 				attribution='&copy; Thomas Burnett-Taylor'
-				url="https://io.tbt.wtf/gtasa-map/tiles/{z}/{x}/{y}.jpg"
+				url="/tiles/{z}/{x}/{y}.jpg"
 			/>
 
 			{props.showMarkers && props.markers.map( (loc, ind) => {
