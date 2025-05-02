@@ -115,7 +115,7 @@ function MappedProperty(props: MappedPropertyProps, ref: any) {
 			<MapEvents clickHandler={props.onClick} />
 			<TileLayer
 				attribution='&copy; Thomas Burnett-Taylor'
-				url="/tiles/{z}/{x}/{y}.jpg"
+				url="https://api.mikescnr.com/v1/map/tile/{z}/{x}/{y}.jpg"
 			/>
 
 			{props.showMarkers && props.markers.map( (loc, ind) => {
